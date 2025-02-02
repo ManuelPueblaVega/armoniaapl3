@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualizador de Armonía en Círculo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #e0f7fa;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+    }
+    /* Contenedor principal en forma de círculo */
+    .circle-container {
+      position: relative;
+      width: 500px;
+      height: 500px;
+      margin: 20px auto;
+      border: 2px solid #333;
+      border-radius: 50%;
+      background-color: #fff;
+      overflow: hidden;
+    }
+    /* Estilo para los botones de las notas */
+    .note-btn {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background-color: #ff9800;
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.3s, background-color 0.3s;
+    }
+    .note-btn:hover {
+      transform: scale(1.1);
+      background-color: #f57c00;
+    }
+    /* Contenedor del submenú de tipos de acorde */
+    .submenu-container {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      margin: -100px 0 0 -100px; /* Centra el submenú en la posición clickeada */
+      pointer-events: none; /* Por defecto, el contenedor no captura clicks */
+    }
+    /* Botones de tipo de acorde */
+    .chord-btn {
+      position: absolute;
+      width: 80px;
+      height: 30px;
+      background-color: #4caf50;
+      color: #fff;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      pointer-events: auto; /* Habilitamos clicks en los botones */
+      transition: transform 0.3s, background-color 0.3s;
+    }
+    .chord-btn:hover {
+      transform: scale(1.1);
+      background-color: #388e3c;
+    }
+    /* Panel de detalles del acorde seleccionado */
+    .chord-details {
+      margin-top: 30px;
+      padding: 15px;
+      background-color: #fff;
+      border: 2px solid #333;
+      border-radius: 8px;
+      display: inline-block;
+      min-width: 300px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Visualizador Interactivo de Armonía Musical</h1>
+  
+  <!-- Contenedor del círculo con las notas -->
+  <div class="circle-container" id="circleContainer">
+    <!-- Se generarán dinámicamente los botones para cada nota -->
+  </div>
+  
+  <!-- Panel para mostrar los detalles del acorde seleccionado -->
+  <div class="chord-details" id="chordDetails" style="display:none;">
+    <h2 id="chordTitle"></h2>
+    <p id="chordNotes"></p>
+  </div>
+  
+  <script>
+    // Definición de las 12 notas cromáticas y los tipos de acordes con sus fórmulas (en semitonos)
+    const notas = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const tiposAcordes = {
+      "Mayor": [0, 4, 7],
+      "Menor": [0, 3, 7],
+      "Disminuido": [0, 3, 6],
+      "Aumentado con 7ma": [0, 4, 8, 10]
+    };
+    
+    const circleContainer = document.getElementById("circleContainer");
+    
+    // Función para posicionar los botones de las notas en forma circular
+    function posicionarNotas() {
+      const radio = 220; // Radio de distribución dentro del contenedor (500x500)
+      const centerX = 250;
+      const centerY = 250;
+      
+      notas.forEach((nota, index) => {
+        // Calcular el ángulo para cada nota (se parte desde la parte superior)
+        const angle = (index / notas.length) * 2 * Math.PI - Math.PI / 2;
+        const x = centerX + radio * Math.cos(angle) - 25; // 25 = mitad del ancho del botón (50px/2)
+        const y = centerY + radio * Math.sin(angle) - 25; // 25 = mitad de la altura del botón
+        
+        const btn = document.createElement("button");
+        btn.className = "note-btn";
+        btn.textContent = nota;
+        btn.style.left = x + "px";
+        btn.style.top = y + "px";
+        
+        // Al hacer clic en una nota se despliega un submenú con los tipos de acorde
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          // Elimina cualquier submenú existente
+          const existingSubmenu = document.getElementById("submenuContainer");
+          if(existingSubmenu) {
+            existingSubmenu.remove();
+          }
+          // Se muestra el submenú en la posición central del botón clickeado
+          mostrarSubmenu(nota, x + 25, y + 25);
+        });
+        
+        circleContainer.appendChild(btn);
+      });
+    }
+    
+    // Función para mostrar el submenú con los tipos de acorde alrededor de la nota seleccionada
+    function mostrarSubmenu(notaBase, posX, posY) {
+      const submenu = document.createElement("div");
+      submenu.className = "submenu-container";
+      submenu.id = "submenuContainer";
+      submenu.style.left = posX + "px";
+      submenu.style.top = posY + "px";
+      
+      const chordTypes = Object.keys(tiposAcordes);
+      const subRadio = 80; // Radio para distribuir los botones del submenú
+      
+      chordTypes.forEach((tipo, index) => {
+        const angle = (index / chordTypes.length) * 2 * Math.PI;
+        const btnX = subRadio * Math.cos(angle) - 40; // Centrado (80px/2)
+        const btnY = subRadio * Math.sin(angle) - 15; // Centrado (30px/2)
+        
+        const btn = document.createElement("button");
+        btn.className = "chord-btn";
+        btn.textContent = tipo;
+        btn.style.left = btnX + "px";
+        btn.style.top = btnY + "px";
+        
+        // Al hacer clic en un tipo de acorde se muestran los detalles
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          mostrarDetallesAcorde(notaBase, tipo);
+          // Se elimina el submenú tras la selección
+          submenu.remove();
+        });
+        
+        submenu.appendChild(btn);
+      });
+      
+      circleContainer.appendChild(submenu);
+    }
+    
+    // Función que calcula las notas que componen un acorde a partir de la nota base y su tipo
+    function calcularNotasAcorde(notaBase, tipo) {
+      const formula = tiposAcordes[tipo];
+      const indiceBase = notas.indexOf(notaBase);
+      return formula.map(intervalo => notas[(indiceBase + intervalo) % notas.length]);
+    }
+    
+    // Función para mostrar en el panel inferior los detalles del acorde seleccionado
+    function mostrarDetallesAcorde(notaBase, tipo) {
+      const detalles = document.getElementById("chordDetails");
+      const titulo = document.getElementById("chordTitle");
+      const notasAcorde = document.getElementById("chordNotes");
+      
+      const acordeNotas = calcularNotasAcorde(notaBase, tipo);
+      titulo.textContent = `${notaBase} ${tipo}`;
+      notasAcorde.textContent = "Notas: " + acordeNotas.join(", ");
+      detalles.style.display = "block";
+    }
+    
+    // Si se hace clic fuera de cualquier botón, se cierra el submenú (si existe)
+    document.addEventListener("click", () => {
+      const existingSubmenu = document.getElementById("submenuContainer");
+      if(existingSubmenu) {
+        existingSubmenu.remove();
+      }
+    });
+    
+    // Inicializamos la aplicación posicionando las notas en el círculo
+    posicionarNotas();
+  </script>
+</body>
+</html>
